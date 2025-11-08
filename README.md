@@ -1,8 +1,23 @@
 # Biblioteca-para-Manipulação-de-Grafos
 
 - Para iniciar:
-    -python main.py -i as_graph.txt -r lista -a info bfs components -s 1
-    -python main.py -i collaboration_graph.txt -r lista -a info bfs components -s 1
+    - python main.py -i as_graph.txt -r lista -a info bfs components -s 1
+    
+    - python main.py -i collaboration_graph.txt -r lista -a info bfs components -s 1
+
+- Explicação:
+    - -i ou --input = arquivo de entrada.
+    - -r ou --repr = modo de representação, lista ou matriz.
+    - -a ou --actions = o que irá ser feito, info, bfs, dfs, components, memory, degree, diameter, time.
+        - info: grafo gerado.
+        - bfs: busca em largura.
+        - dfs: busca em profundidade.
+        - components: componentes e as conexões de cada componente.
+        - memory: estimativa de memória que será usada.
+        - degree: máximo e minímo de graus no grafo.
+        - diameter: Calcula o diâmetro do grafo aplicando BFS a partir de todos os vértices.
+        - time: mede o tempo de execução do algoritmo de BFS.
+    - -s ou --start = determina o vértice inicial.
 
 - O objetivo deste trabalho é projetar e desenvolver uma biblioteca para manipular grafos. A biblioteca deverá ser capaz de representar grafos assim como implementar um conjunto de algoritmos em grafos. Sendo que a biblioteca deve tem ar seguintes funcionalidades:
     - Entrada: A biblioteca deve ser capaz de ler um grafo de um arquivo texto. O formato do grafo no arquivo será o seguinte: a primeira linha informa o número de vértices do grafo. Cada linha subsequente informa as arestas.
