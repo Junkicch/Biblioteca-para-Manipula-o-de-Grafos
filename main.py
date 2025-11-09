@@ -60,8 +60,14 @@ def main():
         print("grau max:", mx, "grau min:", mn)
 
     if "diameter" in args.actions:
-        d, v = g.diameter_by_bfs()
-        print("diâmetro (BFS all):", d, "vértice:", v+1)
+        # usar algoritmo exato só para grafos pequenos; para grandes usar aproximado
+        threshold = 2000  # ajuste conforme necessário
+        if g.num_vertices > threshold and hasattr(g, "approximate_diameter"):
+            d, v = g.approximate_diameter(rounds=5)
+            print("diâmetro aproximado (double-sweep):", d, "vértice:", v+1)
+        else:
+            d, v = g.diameter_by_bfs()
+            print("diâmetro (BFS all):", d, "vértice:", v+1)
 
     if "time" in args.actions:
         t = g.medir_bfs(args.start - 1)

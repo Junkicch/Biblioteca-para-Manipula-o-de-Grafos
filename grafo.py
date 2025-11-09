@@ -1,5 +1,8 @@
 import time
+import random
 from collections import deque, defaultdict
+import os
+from scipy.sparse import lil_matrix
 
 class Grafo:
     def __init__(self, num_vertices, representacao="lista"):
@@ -105,20 +108,26 @@ class Grafo:
         pai = [-1] * self.num_vertices
         nivel = [-1] * self.num_vertices
 
-        def dfs(v, n):
-            visitado[v] = True
-            nivel[v] = n
+        # Iterative DFS using an explicit stack to avoid recursion depth issues.
+        stack = [(inicio, 0)]
+        visitado[inicio] = True
+        nivel[inicio] = 0
+
+        while stack:
+            v, n = stack.pop()
             vizinhos = (
                 [i for i, ligado in enumerate(self.matriz[v]) if ligado]
                 if self.representacao == "matriz"
                 else self.lista[v]
             )
-            for u in vizinhos:
+            # push neighbors in reverse order so that the traversal order
+            # is similar to the recursive version (optional)
+            for u in reversed(vizinhos):
                 if not visitado[u]:
+                    visitado[u] = True
                     pai[u] = v
-                    dfs(u, n + 1)
-
-        dfs(inicio, 0)
+                    nivel[u] = n + 1
+                    stack.append((u, n + 1))
 
         with open(nome_arquivo, "w") as arq:
             arq.write("Vértice\tPai\tNível\n")
@@ -160,10 +169,14 @@ class Grafo:
         return componentes
 
     # ======= Medição de tempo e memória (opcional) =======
-    def medir_bfs(self, inicio=0):
-        inicio_tempo = time.time()
-        self.busca_largura(inicio, "/dev/null")
-        return time.time() - inicio_tempo
+    def medir_bfs(self, inicio):
+        """Retorna tempo em segundos de execução de uma BFS sem salvar saída."""
+        import time
+        start = time.time()
+        # usar os.devnull para compatibilidade cross-platform
+        self.busca_largura(inicio, os.devnull)
+        end = time.time()
+        return end - start
 
     # ======= Estimativas / utilitários adicionais =======
     def estimate_memory_mb(self):
@@ -189,17 +202,27 @@ class Grafo:
         n = self.num_vertices
         nivel = [-1] * n
         visitado = [False] * n
+
+        # Guard against invalid start vertex
+        if inicio < 0 or inicio >= n:
+            return nivel
+
         fila = deque([inicio])
         visitado[inicio] = True
         nivel[inicio] = 0
         while fila:
             v = fila.popleft()
-            vizinhos = (
+            raw_vizinhos = (
                 [i for i, ligado in enumerate(self.matriz[v]) if ligado]
                 if self.representacao == "matriz"
                 else self.lista[v]
             )
-            for u in vizinhos:
+            # filter neighbors to avoid invalid indices (defensive)
+            for u in raw_vizinhos:
+                if not isinstance(u, int):
+                    continue
+                if u < 0 or u >= n:
+                    continue
                 if not visitado[u]:
                     visitado[u] = True
                     nivel[u] = nivel[v] + 1
@@ -219,4 +242,28 @@ class Grafo:
             if maxlvl > best:
                 best = maxlvl
                 best_v = v
+        return best, best_v
+
+    def approximate_diameter(self, rounds=3):
+        """Approximate diameter using multiple double-sweep runs.
+        Returns (diameter_estimate, vertex_with_max_distance).
+        """
+        n = self.num_vertices
+        if n == 0:
+            return 0, 0
+
+        best = 0
+        best_v = 0
+        start = 0
+        for _ in range(max(1, rounds)):
+            levels = self._bfs_levels(start)
+            # choose a farthest reachable vertex
+            farthest = max(range(n), key=lambda i: levels[i] if levels[i] >= 0 else -1)
+            # BFS from farthest
+            levels2 = self._bfs_levels(farthest)
+            maxlvl2 = max([lv for lv in levels2 if lv is not None and lv >= 0] or [0])
+            if maxlvl2 > best:
+                best = maxlvl2
+                best_v = farthest
+            start = random.randrange(n)
         return best, best_v
